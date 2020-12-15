@@ -1,0 +1,15 @@
+{
+	"name": "redox",
+	"version": "1.0.0",
+	"description": "Speed-up react redux writing",
+	"main": "index.js",
+	"license": "MIT",
+	"dependencies": {
+		"@reduxjs/toolkit": "^1.5.0",
+		"react-redux": "^7.2.2"
+	},
+	"optionalDependencies": {
+		"redux-persist": "^6.0.0",
+		"@react-native-async-storage/async-storage": "^1.12.1"
+	}
+}

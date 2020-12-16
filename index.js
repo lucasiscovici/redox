@@ -123,7 +123,7 @@ const createStorePersist = ({
   persistConfigOpts = {},
   middlewareOpts = {},
   configureStoreOpts = {},
-  persistStoreOpts = {},
+  persistStoreOpts = [],
   loading = null,
 } = {}) => {
   const persistConfig = {
@@ -148,15 +148,21 @@ const createStorePersist = ({
     ...configureStoreOpts,
   });
 
+  console.log(store, persistStoreOpts);
+
   let persistor = persistStore(store, ...persistStoreOpts);
 
-  const Provider = ({children}) => (
-    <ProviderRedux store={store}>
-      <PersistGateRedux loading={loading} persistor={persistor}>
-        {children}
-      </PersistGateRedux>
-    </ProviderRedux>
-  );
+  const Provider = ({children}) => {
+    console.log('ddd ', store);
+    return (
+      <ProviderRedux store={store}>
+        <PersistGateRedux loading={loading} persistor={persistor}>
+          {children}
+        </PersistGateRedux>
+      </ProviderRedux>
+    );
+  };
+  console.log(store, Provider, persistor);
   return {
     store,
     Provider,
@@ -170,9 +176,9 @@ const createStoreWithoutPersist = ({reducer, configureStoreOpts} = {}) => {
     ...configureStoreOpts,
   });
 
-  const Provider = ({children}) => (
-    <ProviderRedux store={store}>{children}</ProviderRedux>
-  );
+  const Provider = ({children}) => {
+    return <ProviderRedux store={store}>{children}</ProviderRedux>;
+  };
 
   return {
     store,
@@ -189,9 +195,7 @@ const createStore = ({reducer, configureStoreOpts = {}, persist = {}} = {}) => {
     ? createStorePersist({reducer, configureStoreOpts, ...persist})
     : createStoreWithoutPersist({reducer, configureStoreOpts});
 
-  return {
-    ...storeObj,
-  };
+  return storeObj;
 };
 
 /*

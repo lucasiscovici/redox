@@ -686,8 +686,14 @@ export const DEFAULT_SELECTORS = {};
 
 export const DEFAULT_GETTERS = {};
 
-const configure = ({modules = {prf}} = {}) => {
+const configure = ({
+    modules = {},
+    usePrf = true,
+    cleanIfCalledMultipleTimes = true,
+} = {}) => {
     if (MODULES_CONFIGURATED) return;
+    if (cleanIfCalledMultipleTimes) MODULES = {};
+    if (usePrf) modules = {...modules, prf};
     Object.entries(modules).forEach(([module_name, module]) => {
         MODULES[module_name] = module;
     });
@@ -1138,6 +1144,7 @@ const createActions = ({actions = {}, slice} = {}) => {
     // const prefix_ = slice?.prefix ?? slice?.name ?? prefix ?? '';
 
     const {extra, reducers} = getSlices({
+        // COMMENT: configure because we need here
         slices: {[slice.name]: slice},
         onlyPrefix: true,
     })[0];
@@ -1181,8 +1188,7 @@ const createActionsGettersSelectors = ({actions = {}, slice} = {}) => {
 };
 const createActionsSelectors = createActionsGettersSelectors;
 const createIndex = createActionsGettersSelectors;
-export {createActionsGettersSelectors, createActionsSelectors, createIndex}
-
+export {createActionsGettersSelectors, createActionsSelectors, createIndex};
 /*
 slices: {Slice} => if one group of slices, [{Slice}] if multiple
     Slice:

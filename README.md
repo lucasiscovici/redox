@@ -114,11 +114,25 @@ user/slice.js
 import {fetchUsers} from './actions';
 
 export const users = () => ({
+
+  // add initialState only for this slice
   initialState: {
         data: {},
-    }
+  },
+  // add getters (only for read from the state)
+  getters: {
+        getUsers: ({state}) => state.data,
+        getUser: ({state, getters, args}) => getters.getUsers({state})?.[args?.id],
+        getUserFirstName: ({state, getters, args}) => getters.getUser({state, getters, args})?.firstname,
+        getUserLastName: ({state, getters, args}) => getters.getUser({state, getters, args})?.lastname,
+  },
+  // add selectors (when we combine getters or selectors)
+  selectors: {
+        getUserFullName: ({getters, args}) => `${getters.getUserFirstName({args})} ${getters.getUserLastName({args})}`
+  },
+  // add mapping between action and modification of the state
   [fetchUsers.name]: (state, {payload}) => {
-    state.data = payload;
+        state.data = payload;
   },
 });
 ```

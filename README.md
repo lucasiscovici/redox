@@ -18,10 +18,24 @@ createStore return the Provider (redux or redux with persist)
 store.js
 
 ```js
-import {createStore} from 'redox';
+import {
+    createStore,
+    // configure
+} from 'redox';
+
+// If we want to configure with special configuration
+// DONT FORGET TO call configure before importing slices
+// configure()
+
+// slices
+import {user} from './user';
+...
 
 const {Provider} = createStore({
-    slices: {},
+    slices: {
+        user,
+        ...
+    },
 });
 
 export {Provider};
@@ -333,6 +347,118 @@ createStorePersist({
   configureStoreOpts = {}, // some configuration options for 'configureStore' function of @reduxjs/toolkit
   combineReducersOpts = {},
 })
+```
+
+# Modules
+## Architecture
+```js
+{
+    config: {
+        persist: {
+            ...
+        },
+    },
+    state: {
+        ...
+    },
+    cases: {
+        pending: (state) => {
+            // pending or p
+            ...
+        },
+        rejected: (state, action) => {
+            // reject or r
+            ...
+        },
+        fulfilled: (state) => {
+            //fulfilled or f
+            ...
+        },
+    },
+    getters: {
+        ...
+    },
+    selectors: {
+        ...
+    },
+}
+
+```
+## PRF
+```js
+ const prf = {
+    config: {
+        persist: {
+            blacklist: ['status', 'error'],
+        },
+    },
+    state: {
+        status: 'idle',
+        error: null,
+    },
+    cases: {
+        pending: (state) => {
+            // pending or p
+            state.status = 'loading';
+        },
+        rejected: (state, action) => {
+            // reject or r
+            state.status = 'failed';
+            state.error = action.error.message;
+        },
+        fulfilled: (state) => {
+            //fulfilled or f
+            state.status = 'succeeded';
+        },
+    },
+    getters: {
+        getStatus: ({state}) => state?.status,
+        getError: ({state}) => state?.error,
+    },
+    selectors: {
+        getError: ({getters}) =>
+            (getters?.getStatus() === 'failed' && getters?.getError()) || '',
+        isStatusFinish: ({getters, selectors}) =>
+            ['rejected', 'succeeded'].includes(getters.getStatus()),
+    },
+};
+```
+
+## configure
+```js
+configure({
+    modules: {}, // object with modules
+    usePrf: true, // use default modules PRF
+    cleanIfCalledMultipleTimes: true, // if configure is called multiples times it's reset the modules 
+})
+
+```
+
+
+store.js
+```js
+import {
+    createStore,
+    configure
+} from 'redox';
+
+// If we want to configure with special configuration
+// DONT FORGET TO call configure before importing slices
+configure({usePrf: false}) // don't use prf by default
+
+// slices
+import {user} from './user';
+...
+
+const {Provider} = createStore({
+    slices: {
+        user,
+        ...
+    },
+});
+
+export {Provider};
+
 ```
 
 # Approach

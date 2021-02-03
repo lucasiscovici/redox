@@ -1134,7 +1134,7 @@ const createActions = ({actions = {}, slice} = {}) => {
     return newActions;
 };
 
-export const createActionsSelectors = ({actions = {}, slice} = {}) => {
+const createActionsGettersSelectors = ({actions = {}, slice} = {}) => {
     const getters = createGetters(slice, slice.name);
     return {
         actions: createActions({actions, slice}),
@@ -1143,6 +1143,9 @@ export const createActionsSelectors = ({actions = {}, slice} = {}) => {
         // selectors: createSelectorObservers(slice, slice.name),
     };
 };
+const createActionsSelectors = createActionsGettersSelectors;
+const createIndex = createActionsGettersSelectors;
+export {createActionsGettersSelectors, createActionsSelectors, createIndex}
 
 /*
 slices: {Slice} => if one group of slices, [{Slice}] if multiple

@@ -1,0 +1,5 @@
+[
+	{ "caption": "Create Redox slice feature", "command": "create_dir_redox", "args": {"paths": []} },
+	{ "caption": "Create Redox store", "command": "create_store_redox", "args": {"paths": []} },
+	{ "caption": "-" },
+]

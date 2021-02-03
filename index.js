@@ -1055,8 +1055,9 @@ export const createSelectors = ({
                 return {
                     [k]: (...args) =>
                         useSelector(
-                            createSelector(() => {
+                            createSelector((state) => {
                                 return v({ // TODO : add selector
+                                    state,
                                     getters,
                                     args: args?.[0] ?? {},
                                     context: {

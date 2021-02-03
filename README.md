@@ -235,6 +235,8 @@ export const SLICE_NAME = () => ({
     // initialState : {}, // specific initial state for this SLICE
     // noPrefix : false, // don't add "SLICE_NAME/" in default type
     // prefix : null, // specify prefix for the type
+    // getters: {}, // ({state, getters, args}) | add getters (only for read from the state)
+    // selectors: {}, //  ({state, getters, args}) | add selectors (when we combine getters or selectors) 
     // reducers : {} // equivalent to "reducers" in CreateSlice of redux-toolkit
 
     // equivalent to extraReducers in CreateSlice of redux-toolkit
@@ -473,6 +475,19 @@ const {Provider} = createStore({
 export {Provider};
 
 ```
+
+# Install
+## npm or yarn
+```bash
+npm install https://github.com/lucasiscoviciMoon/redox 
+// or
+yarn add https://github.com/lucasiscoviciMoon/redox 
+```
+## sublime text plugin
+Package Control: add repository  
+https://raw.github.com/lucasiscoviciMoon/redox/sublime/packages.json  
+Package Control: install package  
+Redox Snippets + SideBar Menu
 
 # Approach
 

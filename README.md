@@ -2,7 +2,7 @@
 
 Speed-up react redux writing
 
-Only write actions as simple function and reducer as object
+Only write actions as simple function and reducer as mapping object
 
 # Installation
 
@@ -433,7 +433,6 @@ configure({
 })
 
 ```
-
 
 store.js
 ```js

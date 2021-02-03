@@ -1,0 +1,22 @@
+{
+  "schema_version": "2.0",
+	"packages": [
+		{
+			"name": "Redox Snippets + SideBar Menu ",
+			"description": "Redox Snippets + SideBar Menu",
+			"author": "lucas iscovici",
+			"homepage": "https://github.com/lucasiscoviciMoon/redox",
+			"details": "https://github.com/lucasiscoviciMoon/redox",
+			"issues": "https://github.com/lucasiscoviciMoon/redox/issues",
+			"readme": "https://raw.github.com/lucasiscoviciMoon/redox/master/README.md",
+			"labels": ["redox", "snippet", "sidebar menu"],
+			"releases": [
+				{
+					"sublime_text": "*",
+					"details": "https://github.com/lucasiscoviciMoon/redox/tree/sublime",
+					"platforms": ["windows", "osx", "linux"]
+				}
+			]
+		}
+	]
+}

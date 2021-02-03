@@ -22,6 +22,27 @@ import {createSelector, createObserver} from './recompute';
 import {useRef, useEffect} from 'react';
 // import {useSelector as useSelectorRedux} from 'react-redux';
 
+function mergeDeep(...objects) {
+    const isObject = (obj) => obj && typeof obj === 'object';
+
+    return objects.reduce((prev, obj) => {
+        Object.keys(obj).forEach((key) => {
+            const pVal = prev[key];
+            const oVal = obj[key];
+
+            if (Array.isArray(pVal) && Array.isArray(oVal)) {
+                prev[key] = pVal.concat(...oVal);
+            } else if (isObject(pVal) && isObject(oVal)) {
+                prev[key] = mergeDeep(pVal, oVal);
+            } else {
+                prev[key] = oVal;
+            }
+        });
+
+        return prev;
+    }, {});
+}
+
 let refsCount = 0;
 
 const addRef = (selector) => {
@@ -587,11 +608,15 @@ function getSlicesFromExtraReducers({
     delete extraReducers.selectors;
     delete extraReducers.getters;
 
-    const modulesInitialState = Object.values(MODULES)
-        .map((module) => module?.state ?? {})
-        .reduce((state1, state2) => ({...state1, ...state2}), {});
+    const modulesInitialState = mergeDeep(
+        ...Object.values(MODULES).map((module) => module?.state ?? {}),
+        defaultInitialState,
+        initialState,
+        reducerInitialState,
+    );
+    // .reduce((state1, state2) => ({...state1, ...state2}), {});
 
-    const modulesDefaultCases = {};
+    // const modulesDefaultCases = mergeDeep(defaultCases,);
 
     // console.log(modulesDefaultCases);
 
@@ -599,16 +624,16 @@ function getSlicesFromExtraReducers({
         name,
         initialState: {
             ...modulesInitialState,
-            ...defaultInitialState,
-            ...initialState,
-            ...reducerInitialState,
+            // ...defaultInitialState,
+            // ...initialState,
+            // ...reducerInitialState,
         },
         reducers: reducersRTK,
         extraReducers,
         noPrefix,
         defaultCases: {
             ...defaultCases,
-            ...modulesDefaultCases,
+            // ...modulesDefaultCases,
         },
         onlyPrefix,
     });
@@ -743,9 +768,13 @@ function combineReducersFromSlicesReducers({slices, reducers, persistConfig}) {
     const gg = flatArrayOfObject(slices, reducers);
     // console.log(gg1, gg);
     if (persistConfig) {
-        const persistConfigModules = Object.values(MODULES)
-            .map((module) => module?.config?.persist ?? {})
-            .reduce((a, b) => ({...a, ...b}), {}); // TODO: revoir ça
+        const persistConfigModules = mergeDeep(
+            ...Object.values(MODULES).map(
+                (module) => module?.config?.persist ?? {},
+            ),
+            persistConfig,
+        );
+        // .reduce((a, b) => ({...a, ...b}), {}); // TODO: revoir ça
 
         // console.log(
         //     flatArrayOfObject(
@@ -779,7 +808,7 @@ function combineReducersFromSlicesReducers({slices, reducers, persistConfig}) {
                             [gg_name]: persistReducer(
                                 createPersistConfig({
                                     key: gg_name,
-                                    ...persistConfig,
+                                    // ...persistConfig,
                                     ...persistConfigModules,
                                 }),
                                 g,
@@ -940,16 +969,19 @@ export const createGetters = (
 ) => {
     const sliceObj = getSlicesObj({slice});
     const {getters = {}} = sliceObj;
-    const modulesDefaultGetters = Object.values(MODULES)
-        .map((module) => module?.getters ?? {})
-        .reduce((state1, state2) => ({...state1, ...state2}), {});
+    const modulesDefaultGetters = mergeDeep(
+        ...Object.values(MODULES).map((module) => module?.getters ?? {}),
+        defaultGetters,
+        getters,
+    );
+    // .reduce((state1, state2) => ({...state1, ...state2}), {});
 
     const gettersAll = flatArrayOfObject(
         {},
         Object.entries({
             ...modulesDefaultGetters,
-            ...defaultGetters,
-            ...getters,
+            // ...defaultGetters,
+            // ...getters,
         }).map(([k, v]) => {
             if (isFunction(v)) {
                 return {
@@ -959,8 +991,8 @@ export const createGetters = (
                                 state: state[name],
                                 getters: {
                                     ...modulesDefaultGetters,
-                                    ...defaultGetters,
-                                    ...getters,
+                                    // ...defaultGetters,
+                                    // ...getters,
                                 },
                                 args: args?.[0] ?? {},
                                 context: {
@@ -997,17 +1029,21 @@ export const createSelectors = ({
 }) => {
     const sliceObj = getSlicesObj({slice});
     const {selectors = {}} = sliceObj;
-    const modulesDefaultSelectors = Object.values(MODULES)
-        .map((module) => module?.selectors ?? {})
-        .reduce((state1, state2) => ({...state1, ...state2}), {});
+    const modulesDefaultSelectors = mergeDeep(
+        ...Object.values(MODULES).map((module) => module?.selectors ?? {}),
+        defaultSelectors,
+        selectors,
+        getters,
+    );
+    // .reduce((state1, state2) => ({...state1, ...state2}), {});
 
     const selectorsAll = flatArrayOfObject(
         {},
         Object.entries({
             ...modulesDefaultSelectors,
-            ...defaultSelectors,
-            ...selectors,
-            ...getters,
+            // ...defaultSelectors,
+            // ...selectors,
+            // ...getters,
         }).map(([k, v]) => {
             if (isFunction(v)) {
                 return {

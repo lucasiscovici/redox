@@ -8,18 +8,6 @@ Only write actions as simple function and reducer as object
 
 # Setup
 
-## combineReducers: Create reducers.js
-
-reducers.js
-
-```js
-import {combineReducers} from 'redox';
-
-export default combineReducers({
-  reducers: {},
-});
-```
-
 ## createStore: Create the store file
 
 createStore use redux-persist by default (with web storage)  
@@ -31,10 +19,13 @@ store.js
 
 ```js
 import {createStore} from 'redox';
-import reducer from './reducers';
 
-const {Provider} = createStore({reducer});
+const {Provider} = createStore({
+    slices: {},
+});
+
 export {Provider};
+
 ```
 
 ### React-native
@@ -45,10 +36,15 @@ store.js
 import {createStore} from 'redox';
 import AsyncStorage from '@react-native-community/async-storage';
 
-import reducer from './reducers';
+// slices 
+import {user} from  './user';
+...
 
 const {Provider} = createStore({
-  reducer,
+  slices: {
+    user,
+    ...
+  },
   persist: {storage: AsyncStorage},
 });
 export {Provider};
@@ -79,12 +75,13 @@ export default function App() {
 
 ## Create the "User" feature
 
-- Create the folder 'users'
+- Create the folder 'user'
 - Create 'actions', 'slice', 'index' files
 
 ### Create actions
+It's only a function that return data
 
-users/actions.js
+user/actions.js
 
 ```js
 import api from '...';
@@ -93,24 +90,29 @@ export const fetchUsers = async () => (await api.get('users/')).data;
 ```
 
 ### Create Slice
+It's only a function that return a mapping between action name and modication of the current state of the slice
 
 payload is the data return by the action.
 
-users/slice.js
+user/slice.js
 
 ```js
 import {fetchUsers} from './actions';
 
 export const users = () => ({
+  initialState: {
+        data: {},
+    }
   [fetchUsers.name]: (state, {payload}) => {
     state.data = payload;
   },
 });
 ```
 
-### createActions: Create Index
+### createActionsGettersSelectors: Create Index
+CreateIndex is an alias of createActionsGettersSelectors too
 
-users/index.js
+user/index.js
 
 ```js
 import {createActions} from 'redox';
@@ -118,24 +120,34 @@ import {createActions} from 'redox';
 import * as actions from './actions';
 import {users} from './slice';
 
-export default createActions({actions, slice: users});
+const {actions: createdActions, getters, selectors} = createActionsGettersSelectors({
+  actions,
+  slice: users,
+});
+
+export {createdActions as actions, getters, selectors};
 ```
 
-## add the reducer in reducers.js
+## add the slice in store.js
 
-reducers.js
+store.js
 
 ```js
-import {combineReducers} from 'redox';
+import {createStore} from 'redox';
+...
 
-import {users} from './users/slice';
+// slices 
+import {user} from  './user';
+...
 
-export default combineReducers({
+const {Provider} = createStore({
+  slices: {
+    user,
     ...
-    reducers: {
-        users,
-    },
+  },
+  ...
 });
+export {Provider};
 ```
 
 ## call the action
@@ -144,7 +156,7 @@ export default combineReducers({
 import React from 'react';
 import {useDispatch} from 'redox';
 
-import {fetchUsers} from '@/state/users';
+import {fetchUsers} from '@/state/user';
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -267,72 +279,26 @@ export const users = () => ({
 });
 ```
 
-## combineReducers
-
-```js
-combineReducers({
-    defaultCases = DEFAULT_CASES,
-    defaultInitialState = INITIAL_STATE,
-    initialState = {}
-    reducers = {}
-})
-
-```
-
-'DEFAULT_CASES' is object with default reducers for pending, rejected and fulfilled "state"
-
-```js
-const DEFAULT_CASES = {
-  pending: (state) => {
-    // pending or p
-    state.status = 'loading';
-  },
-  reject: (state, action) => {
-    // reject or r
-    state.status = 'failed';
-    state.error = action.error.message;
-  },
-  fulfilled: (state) => {
-    //fulfilled or f
-    state.status = 'succeeded';
-  },
-};
-```
-
-'INITIAL_STATE' is object with default state used by DEFAULT_CASES reducers
-
-```js
-const INITIAL_STATE = {
-  status: 'idle', // idle, loading, failed, succeeded
-  error: null,
-};
-```
-
-'initialState' is the default state for each reducers
-'reducers' are the object of reducers
-
-reducers.js
-
-```js
-import {combineReducers} from 'redox';
-
-export default combineReducers({
-    initialState: {
-        data: {},
-    },
-    ...
-});
-```
-
-All reducers with have in their initial state "data" which is an empty object.
-
 ## createStore
+### slices
+it's apply different options for a group of slice
+
+"initialState" : initial state for each slice  
+"defaultCases" (deprecated)  : default cases for fulfilled, pending, rejected  
+"defaultInitialState" (deprecated) : default initial state for each slice
+ 
+the rest are the slices
+ 
+ 
+(Prefer use modules that default*)
 
 ```js
 createStore({
-    reducer,
+    slices, // {} or [] each slices could have an specific initialState 
     configureStoreOpts = {}, // some configuration options for 'configureStore' function of @reduxjs/toolkit
     persist = {} // if persist is set to null/undefined no persistance, if set it's the configuration options for createStorePersist
+    combineReducersOpts = {} // some configuration for 'combineReducersListOrObject' (clearStateActionType)
+    reducers = {} // reducers without redox configuration (normal reducers)
 })
 ```
 
@@ -340,8 +306,11 @@ createStore({
 
 ```js
 createStorePersist({
-  reducer,
+  slices = {},
+  reducers = {},
+  //
   configureStoreOpts = {}, // some configuration options for 'configureStore' function of @reduxjs/toolkit
+  combineReducersOpts = {}, // some conf options for 'combineReducersListOrObject'
   // following are options from 'persist' object from createStore
   whitelist = [], // for redux-persist (persistConfig)
   blacklist = [], // for redux-persist (persistConfig)
@@ -359,8 +328,10 @@ createStorePersist({
 
 ```js
 createStorePersist({
-  reducer,
+  slices = {},
+  reducers = {},
   configureStoreOpts = {}, // some configuration options for 'configureStore' function of @reduxjs/toolkit
+  combineReducersOpts = {},
 })
 ```
 

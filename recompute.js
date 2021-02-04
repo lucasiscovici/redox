@@ -1,57 +1,48 @@
-'use strict';
-
-exports.__esModule = true;
-exports.setState = exports.createSelector = exports.createObserver = exports.createContext = void 0;
-
 // From fast-memoize
 //  See: https://github.com/caiogondim/fast-memoize.js/blob/master/src/index.js
 function isPrimitive(value) {
     return (
-        value == null || typeof value === 'number' || typeof value === 'boolean' // string is an unsafe primitive for our needs
+        value == null ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+        // string is an unsafe primitive for our needs
         //  see test for 'single argument type detection'
         // || typeof value === 'string'
     );
 }
 
-var _UNDEFINED_ = Symbol('undefined');
-
-var defaultSerialize = function defaultSerialize(args) {
+const _UNDEFINED_ = Symbol('undefined');
+const defaultSerialize = args => { 
     if (args.length === 0) {
         return _UNDEFINED_;
     }
-
     if (args.length === 1 && isPrimitive(args[0])) {
-        return ''.concat(args[0]);
+        return `${args[0]}`;
     }
-
-    var key = JSON.stringify(args);
-
+    const key = JSON.stringify(args);
     if (key.length >= 1024) {
-        console.warn(
-            'Passing large objects as arguments to selectors might impact memory usage. Arguments:',
-            args,
-        );
+        console.warn('Passing large objects as arguments to selectors might impact memory usage. Arguments:', args);
     }
-
     return key;
 };
 
-var getObserverKey = function getObserverKey(id, arg) {
+const getObserverKey = (id, arg) => {
     if (arg === undefined) {
-        return ''.concat(id);
+        return `${id}`;
     }
-
     if (isPrimitive(arg)) {
-        return ''.concat(id, ':').concat(arg);
+        return `${id}:${arg}`;
     }
+    return `${id}:${JSON.stringify(arg)}`;
+}
 
-    return ''.concat(id, ':').concat(JSON.stringify(arg));
-}; // Also from fast-memoize
-
+// Also from fast-memoize
 class DefaultCache {
     constructor() {
         this.cache = Object.create(null);
-    } // has(key) {
+    }
+
+    // has(key) {
     //     return (key in this.cache);
     // }
 
@@ -71,56 +62,53 @@ class DefaultCache {
 class Computation {
     constructor() {
         this.observersList = []; // list of observers, used for fast iteration
-
-        this.observersIdx = {}; // index by key, used to merge with other computation objects
+        this.observersIdx = {};   // index by key, used to merge with other computation objects
     }
 
     addObserver(observer) {
-        var key = getObserverKey(observer.id, observer.arg);
+        const key = getObserverKey(observer.id, observer.arg);
         this.observersIdx[key] = observer;
         this.observersList = Object.values(this.observersIdx);
     }
 
-    mergeObservers(other) {
+    mergeObservers(other) { 
         // Fast merge using the indexes
-        Object.assign(this.observersIdx, other.observersIdx); // Regenerate the iteration list
-
+        Object.assign(
+            this.observersIdx,
+            other.observersIdx
+        );
+        // Regenerate the iteration list
         this.observersList = Object.values(this.observersIdx);
     }
 
     dependenciesChanged(state) {
-        for (var i = 0, l = this.observersList.length; i < l; ++i) {
-            var observer = this.observersList[i];
-            var newResult =
-                observer.arg === undefined
-                    ? observer.resultFunc(state)
-                    : observer.resultFunc(state, observer.arg);
+        for (let i = 0, l = this.observersList.length; i < l; ++i) {
+            const observer = this.observersList[i];
+            const newResult = observer.arg === undefined
+                ? observer.resultFunc(state)
+                : observer.resultFunc(state, observer.arg);
 
-            if (!observer.isEqual(newResult, observer.result)) {
+            if (! observer.isEqual(newResult, observer.result)) {
                 return true;
             }
         }
 
         return false;
-    } // For testing
+    }
 
+    // For testing
     getObserversIds() {
         return Object.keys(this.observersIdx);
     }
 }
 
-var createDefaultCache = function createDefaultCache() {
-    return new DefaultCache();
-};
+const createDefaultCache = () => new DefaultCache();
 
-var defaultEquals = function defaultEquals(a, b) {
-    return a === b;
-};
+const defaultEquals = (a, b) => a === b;
 
 class Observer {
     constructor(id, resultFunc, isEqual, ctx) {
-        this.id = ''.concat(id); // ensure string so that Computation can index by Id
-
+        this.id = `${id}`; // ensure string so that Computation can index by Id
         this.resultFunc = resultFunc;
         this.isEqual = isEqual;
         this.ctx = ctx;
@@ -128,19 +116,16 @@ class Observer {
 
     invoke() {
         if (arguments.length > 1) {
-            throw new Error(
-                'Observer methods cannot be invoked with more than one argument',
-            );
+            throw new Error('Observer methods cannot be invoked with more than one argument');
         }
+        const arg = arguments.length ? arguments[0] : undefined;
+        const result = arg !== undefined
+            ? this.resultFunc(this.ctx.state, arg)
+            : this.resultFunc(this.ctx.state);
 
-        var arg = arguments.length ? arguments[0] : undefined;
-        var result =
-            arg !== undefined
-                ? this.resultFunc(this.ctx.state, arg)
-                : this.resultFunc(this.ctx.state); // Create a link between this observer and
+        // Create a link between this observer and
         //  the selectors calling it.
-
-        for (var i = 0, l = Context.callStack.length; i < l; ++i) {
+        for (let i = 0, l = Context.callStack.length; i < l; ++i) { 
             Context.callStack[i].addObserver({
                 id: this.id,
                 isEqual: this.isEqual,
@@ -154,15 +139,9 @@ class Observer {
     }
 
     getProxy() {
-        var _this = this;
-
-        var proxy = this.invoke.bind(this);
+        const proxy = this.invoke.bind(this);
         proxy.id = this.id;
-
-        proxy.key = function (arg) {
-            return getObserverKey(_this.id, arg);
-        };
-
+        proxy.key = arg => getObserverKey(this.id, arg);
         return proxy;
     }
 }
@@ -170,20 +149,20 @@ class Observer {
 class Selector {
     constructor(computeFunc, cache, serialize, ctx) {
         this.recomputations = 0;
-        this.computeFunc = computeFunc.bind(ctx);
+        this.computeFunc = computeFunc;
         this.cache = cache;
         this.serialize = serialize;
         this.ctx = ctx;
     }
 
     mock() {
-        var cacheKey = this.serialize(arguments);
-        var computation = new Computation(cacheKey);
+        const cacheKey = this.serialize(arguments);
+        const computation = new Computation(cacheKey);
         this.cache.set(cacheKey, computation);
         return {
             result(res) {
                 computation.result = res;
-            },
+            }
         };
     }
 
@@ -192,115 +171,97 @@ class Selector {
     }
 
     invoke() {
-        var cacheKey = this.serialize(arguments);
-        var computation = this.cache.get(cacheKey);
+        const cacheKey = this.serialize(arguments);
+        let computation = this.cache.get(cacheKey);
 
         if (
             !computation ||
-            computation.dependenciesChanged(this.ctx.state) // dependencies didn't change
+            computation.dependenciesChanged(this.ctx.state)  // dependencies didn't change
         ) {
             // if dependencies changed it means that the observed state changed
             //  therefore we should invalidate the cache
             if (computation) {
                 this.cache.clear();
-            } // always create a new computation before we recompute the result
+            }
+
+            // always create a new computation before we recompute the result 
             //  so that we can untrack previous dependencies.
+            computation = new Computation(cacheKey);
 
-            computation = new Computation(cacheKey); // Compute new result
-
+            // Compute new result
             Context.callStack.push(computation);
-
             try {
-                computation.result = this.computeFunc.apply(this.ctx, [
-                    this.ctx.state,
-                    ...arguments,
-                ]);
+                computation.result = this.computeFunc.apply(null, arguments);
             } finally {
                 Context.callStack.pop();
-            } // Store new computation in the cache
+            }
 
+            // Store new computation in the cache
             this.cache.set(cacheKey, computation);
             ++this.recomputations;
-        } // Share observer dependencies with the parent selectors.
+        }
 
-        for (var i = 0, l = Context.callStack.length; i < l; ++i) {
+        // Share observer dependencies with the parent selectors.
+        for (let i = 0, l = Context.callStack.length; i < l; ++i) {
             Context.callStack[i].mergeObservers(computation);
         }
 
         return computation.result;
-    }
-
+    };
+    
     dependencies() {
-        var cacheKey = this.serialize(arguments);
-        var computation = this.cache.get(cacheKey);
+        const cacheKey = this.serialize(arguments);
+        const computation = this.cache.get(cacheKey);
         return computation ? computation.getObserversIds() : [];
     }
 
     getProxy(context) {
-        var _this2 = this;
-
-        var proxy = this.invoke.bind(this);
+        const proxy = this.invoke.bind(this);
         proxy.dependencies = this.dependencies.bind(this);
         proxy.mock = this.mock.bind(this);
         proxy.clearCache = this.clearCache.bind(this);
-
-        proxy.recomputations = function () {
-            return _this2.recomputations;
-        };
-
-        proxy.withState = function (state) {
-            context.state = state;
+        proxy.recomputations = () => this.recomputations;
+        proxy.withState = state => {
+            context.setState(state);
             return proxy;
         };
-
         return proxy;
     }
 }
 
 class Context {
+
     constructor(initialState) {
         this.state = initialState;
     }
 
-    createObserver(resultFunc) {
-        var options =
-            arguments.length > 1 && arguments[1] !== undefined
-                ? arguments[1]
-                : {};
-
+    createObserver(resultFunc, options = {}) {
         if (resultFunc.length > 2) {
-            throw new Error(
-                'Observer methods cannot receive more than two arguments',
-            );
+            throw new Error('Observer methods cannot receive more than two arguments');
         }
 
-        var id = ++Context.numObservers; // const name = options.name || `observer-${id}`;
-
-        var isEqual = options.isEqual || defaultEquals;
-        var observer = new Observer(id, resultFunc, isEqual, this);
-        return observer.getProxy(this);
+        const id = ++Context.numObservers;
+        // const name = options.name || `observer-${id}`; 
+        const isEqual = options.isEqual || defaultEquals;
+        const observer = new Observer(id, resultFunc, isEqual, this);
+        return observer.getProxy();
     }
 
-    createSelector(computeFunc) {
-        var options =
-            arguments.length > 1 && arguments[1] !== undefined
-                ? arguments[1]
-                : {};
-        var cache = options.cache || createDefaultCache();
-        var serialize = options.serialize || defaultSerialize;
-        var selector = new Selector(computeFunc, cache, serialize, this);
+    createSelector(computeFunc, options = {}) {
+        const cache = options.cache || createDefaultCache();
+        const serialize = options.serialize || defaultSerialize;
+        const selector = new Selector(computeFunc, cache, serialize, this);
         return selector.getProxy(this);
+    }
+    setState(newState){
+        this.state = newState
     }
 
     getProxy() {
-        var _this3 = this;
-
         return {
             createObserver: this.createObserver.bind(this),
             createSelector: this.createSelector.bind(this),
-            setState: function setState(newState) {
-                return (_this3.state = newState);
-            },
+            setState: this.setState.bind(this)
         };
     }
 }
@@ -308,16 +269,12 @@ class Context {
 Context.callStack = [];
 Context.numObservers = 0;
 
-var createContext = function createContext(initialState) {
-    var context = new Context(initialState);
+export const createContext = initialState => {
+    const context = new Context(initialState);
     return context.getProxy();
 };
 
-exports.createContext = createContext;
-var context = createContext();
-var createObserver = context.createObserver;
-exports.createObserver = createObserver;
-var createSelector = context.createSelector;
-exports.createSelector = createSelector;
-var setState = context.setState;
-exports.setState = setState;
+const context = createContext();
+export const createObserver = context.createObserver;
+export const createSelector = context.createSelector;
+export const setState = context.setState;

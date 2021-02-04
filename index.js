@@ -15,11 +15,13 @@ import {
 // import defaultStorage from 'redux-persist/lib/storage';
 import createWebStorage from 'redux-persist/lib/storage/createWebStorage';
 
-import {createSelector, createObserver} from './recompute';
+import {createSelector, createObserver, setState} from './recompute';
 // import {setState} from './recompute';
 // import {parse} from 'pathington';
 
 import {useRef, useEffect} from 'react';
+
+import isEqual from 'lodash.isequal';
 // import {useSelector as useSelectorRedux} from 'react-redux';
 
 function mergeDeep(...objects) {
@@ -84,12 +86,8 @@ const useSelector = (selector, ...args) => {
     }, [selector]);
 
     const result = useSelectorRedux((state) => {
-        // setState(state);
-        // selector.withState = function (state) {
-        //   context.state = state;
-        //   return proxy;
-        // }
-        return selector.withState(state).apply(null, args);
+        setState(state);
+        return selector(...args);
     });
 
     return result;
@@ -653,7 +651,7 @@ export const prf = {
         pending: (state) => {
             // pending or p
             state.status = 'loading';
-            // state.error = null;
+            state.error = null;
         },
         rejected: (state, action) => {
             // reject or r
@@ -673,7 +671,7 @@ export const prf = {
     selectors: {
         getError: ({getters}) =>
             (getters?.getStatus() === 'failed' && getters?.getError()) || '',
-        isStatusFinish: ({getters, selectors}) =>
+        isStatusFinish: ({getters}) =>
             ['rejected', 'succeeded'].includes(getters.getStatus()),
     },
 }; // pending, reject, fulfilled
@@ -968,11 +966,75 @@ function combineReducersListOrObject({
     };
 }
 
+class Getters {
+    constructor(name) {
+        this.name = name;
+        // this.gettersPure = {};
+        this.infiniteGetters = {};
+        this.getters = {};
+        this.gettersObserver = {};
+    }
+    addGetter(getterName, getterFn) {
+        // this.gettersPure[getterName] = getterFn;
+        this.createInfiniteGetter(getterName, getterFn);
+        this.createObserver(getterName, this.infiniteGetters[getterName]);
+        this.getters[getterName] = this.invokeGetter(
+            this.gettersObserver[getterName],
+        );
+    }
+    addGetters(getters) {
+        const _this = this;
+        Object.entries(getters).forEach(([k, v]) => {
+            if (isFunction(v)) {
+                _this.addGetter(k, v);
+            }
+        });
+        return this.getters;
+    }
+    infiniteGettersWithState(state) {
+        const out = {};
+        Object.entries(this.infiniteGetters).forEach(([k, v]) => {
+            out[k] = v(state);
+        });
+        return out;
+    }
+    createBuildInfiniteGetter(getterFn) {
+        const name = this.name;
+        const _this = this;
+        return (state) => (arg = {}) =>
+            getterFn({
+                state: state?.[name],
+                getters: _this.infiniteGettersWithState(state),
+                args: arg,
+                context: {
+                    state,
+                    name,
+                },
+            });
+    }
+    createInfiniteGetter(getterName, getterFn) {
+        this.infiniteGetters[getterName] = this.createBuildInfiniteGetter(
+            getterFn,
+        );
+    }
+    createObserver(getterName, infiniteGettersFn) {
+        this.gettersObserver[getterName] = createObserver(
+            (state, arg) => infiniteGettersFn(state)(arg),
+            {isEqual},
+        );
+    }
+    invokeGetter(getterFn) {
+        const _this = this;
+        return (arg = {}) => getterFn(arg);
+    }
+}
+
 export const createGetters = (
     slice,
     name,
     defaultGetters = DEFAULT_GETTERS,
 ) => {
+    const gettersObj = new Getters(name);
     const sliceObj = getSlicesObj({slice});
     const {getters = {}} = sliceObj;
     const modulesDefaultGetters = mergeDeep(
@@ -981,51 +1043,98 @@ export const createGetters = (
         getters,
     );
     // .reduce((state1, state2) => ({...state1, ...state2}), {});
-
-    const gettersAll = flatArrayOfObject(
-        {},
-        Object.entries({
-            ...modulesDefaultGetters,
-            // ...defaultGetters,
-            // ...getters,
-        }).map(([k, v]) => {
-            if (isFunction(v)) {
-                return {
-                    [k]: (...args) =>
-                        createObserver((state) =>
-                            v({
-                                state: state[name],
-                                getters: {
-                                    ...modulesDefaultGetters,
-                                    // ...defaultGetters,
-                                    // ...getters,
-                                },
-                                args: args?.[0] ?? {},
-                                context: {
-                                    state,
-                                    name,
-                                },
-                            }),
-                        )(),
-                };
-            }
-            // if (isString(v)) {
-            //     return {
-            //         [k]: (...args) =>
-            //             createObserver(({state}) =>
-            //                 getByPath(state[name], v, undefined),
-            //             ),
-            //     };
-            // }
-        }),
-    );
+    const gettersAll = gettersObj.addGetters({
+        ...modulesDefaultGetters,
+        // ...defaultGetters,
+        // ...getters,
+    });
+    // const gettersAll = flatArrayOfObject(
+    //     {},
+    //     Object.entries({
+    //         ...modulesDefaultGetters,
+    //         // ...defaultGetters,
+    //         // ...getters,
+    //     }).map(([k, v]) => {
+    //         if (isFunction(v)) {
+    //             return {
+    //                 [k]: (...args) =>
+    //                     createObserver((state) =>
+    //                         v({
+    //                             state: state[name],
+    //                             getters: {
+    //                                 ...modulesDefaultGetters,
+    //                                 // ...defaultGetters,
+    //                                 // ...getters,
+    //                             },
+    //                             args: args?.[0] ?? {},
+    //                             context: {
+    //                                 state,
+    //                                 name,
+    //                             },
+    //                         })
+    //                     )(),
+    //             };
+    //         }
+    //         // if (isString(v)) {
+    //         //     return {
+    //         //         [k]: (...args) =>
+    //         //             createObserver(({state}) =>
+    //         //                 getByPath(state[name], v, undefined),
+    //         //             ),
+    //         //     };
+    //         // }
+    //     })
+    // );
 
     return gettersAll;
 };
 
-// export const createGetters = () => {
-
-// }
+class Selectors {
+    constructor(name, getters) {
+        this.name = name;
+        this.selectors = {};
+        this.selectorsObj = {};
+        this.getters = getters; // observers
+    }
+    addSelector(selectorName, selectorFn) {
+        this.createSelector(selectorName, selectorFn);
+        this.selectors[selectorName] = this.invokeSelector(
+            this.selectorsObj[selectorName],
+        );
+    }
+    addSelectors(selectors) {
+        const _this = this;
+        Object.entries(selectors).forEach(([k, v]) => {
+            if (isFunction(v)) {
+                _this.addSelector(k, v);
+            }
+        });
+        return this.selectors;
+    }
+    createBuildSelector(selectorFn) {
+        const name = this.name;
+        const _this = this;
+        return (...args) =>
+            selectorFn({
+                getters: _this.getters,
+                selectors: _this.selectorsObj,
+                args: args?.[0] ?? args,
+                context: {
+                    name,
+                },
+            });
+    }
+    createSelector(selectorName, selectorFn) {
+        const _this = this;
+        this.selectorsObj[selectorName] = createSelector((...args) =>
+            _this.createBuildSelector(selectorFn)(...args),
+        );
+    }
+    invokeSelector(selectorFn) {
+        const _this = this;
+        return (...args) => useSelector(selectorFn, ...args);
+    }
+}
 
 export const createSelectors = ({
     slice,
@@ -1033,6 +1142,7 @@ export const createSelectors = ({
     getters = {},
     defaultSelectors = DEFAULT_SELECTORS,
 }) => {
+    const selectorsObj = new Selectors(name, getters);
     const sliceObj = getSlicesObj({slice});
     const {selectors = {}} = sliceObj;
     const modulesDefaultSelectors = mergeDeep(
@@ -1041,45 +1151,47 @@ export const createSelectors = ({
         selectors,
         getters,
     );
-    // .reduce((state1, state2) => ({...state1, ...state2}), {});
 
-    const selectorsAll = flatArrayOfObject(
-        {},
-        Object.entries({
-            ...modulesDefaultSelectors,
-            // ...defaultSelectors,
-            // ...selectors,
-            // ...getters,
-        }).map(([k, v]) => {
-            if (isFunction(v)) {
-                return {
-                    [k]: (...args) =>
-                        useSelector(
-                            createSelector((state) => {
-                                return v({ // TODO : add selector
-                                    state,
-                                    getters,
-                                    args: args?.[0] ?? {},
-                                    context: {
-                                        name,
-                                    },
-                                });
-                            }),
-                        ),
-                };
-            }
-            // if (isString(v)) {
-            //     return {
-            //         [k]: (...args) =>
-            //             useSelectorRedux((state) =>
-            //                 createSelector((state) =>
-            //                     getByPath(state[name], v, undefined),
-            //                 ),
-            //             ),
-            //     };
-            // }
-        }),
-    );
+    const selectorsAll = selectorsObj.addSelectors(modulesDefaultSelectors);
+
+    // const selectorsAll = flatArrayOfObject(
+    //     {},
+    //     Object.entries({
+    //         ...modulesDefaultSelectors,
+    //         // ...defaultSelectors,
+    //         // ...selectors,
+    //         // ...getters,
+    //     }).map(([k, v]) => {
+    //         if (isFunction(v)) {
+    //             return {
+    //                 [k]: (...args) =>
+    //                     useSelector(
+    //                         createSelector((state) => {
+    //                             return v({
+    //                                 // TODO : add selector
+    //                                 state,
+    //                                 getters,
+    //                                 args: args?.[0] ?? {},
+    //                                 context: {
+    //                                     name,
+    //                                 },
+    //                             });
+    //                         })
+    //                     ),
+    //             };
+    //         }
+    //         // if (isString(v)) {
+    //         //     return {
+    //         //         [k]: (...args) =>
+    //         //             useSelectorRedux((state) =>
+    //         //                 createSelector((state) =>
+    //         //                     getByPath(state[name], v, undefined),
+    //         //                 ),
+    //         //             ),
+    //         //     };
+    //         // }
+    //     })
+    // );
 
     return selectorsAll;
 };

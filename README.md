@@ -122,9 +122,9 @@ export const users = () => ({
   // add getters (only for read from the state)
   getters: {
         getUsers: ({state}) => state.data,
-        getUser: ({state, getters, args}) => getters.getUsers({state})?.[args?.id],
-        getUserFirstName: ({state, getters, args}) => getters.getUser({state, getters, args})?.firstname,
-        getUserLastName: ({state, getters, args}) => getters.getUser({state, getters, args})?.lastname,
+        getUser: ({getters, args}) => getters.getUsers({state})?.[args?.id],
+        getUserFirstName: ({getters, args}) => getters.getUser({args})?.firstname,
+        getUserLastName: ({getters, args}) => getters.getUser({args})?.lastname,
   },
   // add selectors (when we combine getters or selectors)
   selectors: {
@@ -236,7 +236,7 @@ export const SLICE_NAME = () => ({
     // noPrefix : false, // don't add "SLICE_NAME/" in default type
     // prefix : null, // specify prefix for the type
     // getters: {}, // ({state, getters, args}) | add getters (only for read from the state)
-    // selectors: {}, //  ({state, getters, args}) | add selectors (when we combine getters or selectors) 
+    // selectors: {}, //  ({selectors, getters, args}) | add selectors (when we combine getters or selectors) 
     // reducers : {} // equivalent to "reducers" in CreateSlice of redux-toolkit
 
     // equivalent to extraReducers in CreateSlice of redux-toolkit
@@ -416,6 +416,7 @@ createStorePersist({
         pending: (state) => {
             // pending or p
             state.status = 'loading';
+            state.error = null;
         },
         rejected: (state, action) => {
             // reject or r
@@ -434,7 +435,7 @@ createStorePersist({
     selectors: {
         getError: ({getters}) =>
             (getters?.getStatus() === 'failed' && getters?.getError()) || '',
-        isStatusFinish: ({getters, selectors}) =>
+        isStatusFinish: ({getters}) =>
             ['rejected', 'succeeded'].includes(getters.getStatus()),
     },
 };

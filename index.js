@@ -1148,8 +1148,8 @@ export const createSelectors = ({
     const modulesDefaultSelectors = mergeDeep(
         ...Object.values(MODULES).map((module) => module?.selectors ?? {}),
         defaultSelectors,
-        selectors,
         getters,
+        selectors,
     );
 
     const selectorsAll = selectorsObj.addSelectors(modulesDefaultSelectors);

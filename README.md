@@ -4,7 +4,18 @@ Speed-up react redux writing
 
 Only write actions as simple function and reducer as mapping object
 
-# Installation
+# Install
+## npm or yarn
+```shell
+npm install https://github.com/lucasiscoviciMoon/redox 
+# or
+yarn add https://github.com/lucasiscoviciMoon/redox 
+```
+## sublime text plugin
+Package Control: add repository  
+https://raw.github.com/lucasiscoviciMoon/redox/sublime/packages.json  
+Package Control: install package  
+Redox Snippets + SideBar Menu
 
 # Setup
 
@@ -476,19 +487,6 @@ const {Provider} = createStore({
 export {Provider};
 
 ```
-
-# Install
-## npm or yarn
-```bash
-npm install https://github.com/lucasiscoviciMoon/redox 
-// or
-yarn add https://github.com/lucasiscoviciMoon/redox 
-```
-## sublime text plugin
-Package Control: add repository  
-https://raw.github.com/lucasiscoviciMoon/redox/sublime/packages.json  
-Package Control: install package  
-Redox Snippets + SideBar Menu
 
 # Approach
 

@@ -1443,13 +1443,13 @@ const createStore = ({
               configureStoreOpts,
               ...persist,
               reducers,
-              ...combineReducersOpts,
+              combineReducersOpts,
           })
         : createStoreWithoutPersist({
               slices,
               configureStoreOpts,
               reducers,
-              ...combineReducersOpts,
+              combineReducersOpts,
           });
 
     return storeObj;

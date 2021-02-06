@@ -637,6 +637,16 @@ function getSlicesFromExtraReducers({
     });
 }
 
+export const dataDef  = {
+    state: {
+        data:{}
+    },
+    getters: {
+        getData: ({state}) => state.data,
+    }
+
+}
+
 export const prf = {
     config: {
         persist: {

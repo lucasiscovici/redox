@@ -14,6 +14,6 @@
 		"redux-persist": "^6.0.0"
 	},
 	"devDependencies": {
-		"zod": "^2.0.0-beta.29"
+		"zod": "beta"
 	}
 }

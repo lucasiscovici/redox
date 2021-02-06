@@ -1,0 +1,9 @@
+<snippet>
+	<content><![CDATA[
+import {${1:${2:actions as ${SELECTION}Actions,}${3: selectors as ${SELECTION}Selectors}}} from '${4:${5:@}/${6:${7:state}/${8:${SELECTION}}}}';
+]]></content>
+	<!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
+	<tabTrigger>redoxImportSelectorsActions</tabTrigger>
+	<!-- Optional: Set a scope to limit where the snippet will trigger -->
+	<!-- <scope>source.python</scope> -->
+</snippet>

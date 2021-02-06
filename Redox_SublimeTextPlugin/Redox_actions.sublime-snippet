@@ -1,11 +1,11 @@
 <snippet>
 	<content><![CDATA[
-${1:gettersName}: ({state${2:${3:, getters}${4:, args}}}) => {
-	${5}
-},
+export const ${1:${SELECTION}} = async ({${2}}) => {
+    ${3}
+}
 ]]></content>
 	<!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
-	<tabTrigger>redoxGetters</tabTrigger>
+	<tabTrigger>redoxActions</tabTrigger>
 	<!-- Optional: Set a scope to limit where the snippet will trigger -->
 	<!-- <scope>source.python</scope> -->
-</snippet>	
+</snippet>

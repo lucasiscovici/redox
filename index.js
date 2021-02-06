@@ -672,7 +672,9 @@ export const prf = {
         getError: ({getters}) =>
             (getters?.getStatus() === 'failed' && getters?.getError()) || '',
         isStatusFinish: ({getters}) =>
-            ['rejected', 'succeeded'].includes(getters.getStatus()),
+            ['failed', 'succeeded'].includes(getters.getStatus()),
+        isPending: ({getters, selectors}) =>
+            !selectors.isStatusFinish(),
     },
 }; // pending, reject, fulfilled
 

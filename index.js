@@ -1494,5 +1494,5 @@ const createStore = ({
 
 configure();
 MODULES_CONFIGURATED = false;
-console.log("loaded", MODULES_CONFIGURATED);
+console.log("Redox: loaded", MODULES_CONFIGURATED);
 export { createStore, useDispatch, useSelector, createActions, configure };

@@ -22,6 +22,8 @@ import { createSelector, createObserver, setState } from "./recompute";
 import { useRef, useEffect } from "react";
 
 import isEqual from "lodash.isequal";
+
+var THE_STORE = null;
 // import {useSelector as useSelectorRedux} from 'react-redux';
 
 function mergeDeep(...objects) {
@@ -1479,6 +1481,8 @@ const createStore = ({
         combineReducersOpts,
       });
 
+
+  THE_STORE = storeObj.store;  
   return storeObj;
 };
 

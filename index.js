@@ -1321,11 +1321,17 @@ const createActions = ({ actions = {}, slice } = {}) => {
   });
 
   Object.entries(kkk2).forEach(([actionName_, action]) => {
-    newActions[actionName_] = createAction(action);
+    newActions[actionName_] = createAction(action)
   });
+  const newActionsDispatch = {};
+  Object.entries(newActions).forEach(([k,v])=>{
+    newActionsDispatch[k] = async (...args) => {
+      return THE_STORE?.dispatch(v(...args)) ?? v(...args)
+    };
+  })
 
   // createAction(type)
-  return newActions;
+  return newActionsDispatch;
 };
 
 const createActionsGettersSelectors = ({ actions = {}, slice } = {}) => {

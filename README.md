@@ -142,12 +142,12 @@ export const users = () => ({
   getters: {
         getUsers: ({state}) => state.data,
         getUser: ({getters, args: { userId }}) => getters.getUsers()?.[userId],
-        getUserFirstName: ({getters, args}) => getters.getUser({args})?.firstname,
-        getUserLastName: ({getters, args}) => getters.getUser({args})?.lastname,
+        getUserFirstName: ({getters, args}) => getters.getUser({...args})?.firstname,
+        getUserLastName: ({getters, args}) => getters.getUser({...args})?.lastname,
   },
   // add selectors (when we combine getters or selectors)
   selectors: {
-        getUserFullName: ({getters, args}) => `${getters.getUserFirstName({args})} ${getters.getUserLastName({args})}`
+        getUserFullName: ({getters, args}) => `${getters.getUserFirstName({...args})} ${getters.getUserLastName({...args})}`
   },
   // add mapping between action and modification of the state
   [fetchUsers.name]: (state, {payload}) => { // Redox_extraReducers
@@ -219,6 +219,7 @@ import React from 'react';
 import { actions as userActions, selectors as userSelectors } from '@/state/user';
 
 const Home = () => {
+  const users = userSelectors.getUsers();
   React.useEffect(() => {
     userActions.fetchUsers();
   }, []);

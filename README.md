@@ -75,6 +75,10 @@ const {Provider} = createStore({
 export {Provider};
 ```
 
+### Sublime Text
+
+You can click on the folder (state, State, etc.....)  and click on "Create Redox store"  
+
 ## Providing the Store
 
 We wrap our app with the "\<Provider />"
@@ -114,6 +118,10 @@ import api from '...';
 export const fetchUsers = async () => (await api.get('users/')).data;
 ```
 
+#### Sublime Text
+
+you can use the snippet "Redox_actions"
+
 ### Create Slice
 It's only a function that return a mapping between action name and modication of the current state of the slice
 
@@ -133,7 +141,7 @@ export const users = () => ({
   // add getters (only for read from the state)
   getters: {
         getUsers: ({state}) => state.data,
-        getUser: ({getters, args}) => getters.getUsers({state})?.[args?.id],
+        getUser: ({getters, args: { userId }}) => getters.getUsers()?.[userId],
         getUserFirstName: ({getters, args}) => getters.getUser({args})?.firstname,
         getUserLastName: ({getters, args}) => getters.getUser({args})?.lastname,
   },
@@ -142,11 +150,18 @@ export const users = () => ({
         getUserFullName: ({getters, args}) => `${getters.getUserFirstName({args})} ${getters.getUserLastName({args})}`
   },
   // add mapping between action and modification of the state
-  [fetchUsers.name]: (state, {payload}) => {
+  [fetchUsers.name]: (state, {payload}) => { // Redox_extraReducers
         state.data = payload;
+  },
+  reducers: { // Redox_reducers
+  
   },
 });
 ```
+
+#### Sublime Text
+
+you can use the snippet "Redox_getters", "Redox_selectors", "Redox_reducers", "Redox_extraReducers"
 
 ### createActionsGettersSelectors: Create Index
 CreateIndex is an alias of createActionsGettersSelectors too
@@ -166,6 +181,11 @@ const {actions: createdActions, getters, selectors} = createActionsGettersSelect
 
 export {createdActions as actions, getters, selectors};
 ```
+
+
+### Sublime Text
+
+You can click on the folder (state, State, etc.....)  and click on "Create Redox slice feature" to create the folder with "index.js", "actions.js" and "slice.js"  
 
 ## add the slice in store.js
 
@@ -188,22 +208,26 @@ const {Provider} = createStore({
 });
 export {Provider};
 ```
+## Sublime Text
 
-## call the action
+you can use the snippet "Redox_import_slice"
+
+## call the action, use the selector
 
 ```js
 import React from 'react';
-import {useDispatch} from 'redox';
-
-import {fetchUsers} from '@/state/user';
+import { actions as userActions, selectors as userSelectors } from '@/state/user';
 
 const Home = () => {
-  const dispatch = useDispatch();
   React.useEffect(() => {
-    dispatch(fetchUsers());
+    userActions.fetchUsers();
   }, []);
 };
 ```
+
+### Sublime Text
+
+you can use the snippet "Redox_import_selectors_actions"
 
 # API
 

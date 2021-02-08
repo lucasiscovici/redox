@@ -294,22 +294,11 @@ const processReducer = ({
     if (onlyReducer) {
       return { [`${nameReduced}`]: reducer };
     }
-    // if (isFunction(reducer)) {
-    //     return {
-    //         [`${nameReduced}/fulfilled`]: (arg1, arg2) => {
-    //             (defaultCases.fulfilled ?? defaultCases.f ?? fakeFunc)(
-    //                 arg1,
-    //                 arg2,
-    //             );
-    //             return reducer(arg1, arg2);
-    //         },
-    //     };
-    // } else {
     return {
       [`${nameReduced}/fulfilled`]: (arg1, arg2) => {
         (defaultCases.fulfilled ?? defaultCases.f ?? fakeFunc)(arg1, arg2);
         Object.values(MODULES).forEach((module) =>
-          (module?.cases?.fulfilled ?? module?.cases?.f ?? fakeFunc)(arg1, arg2)
+          (module?.slice?.cases?.fulfilled ?? module?.slice?.cases?.f ?? fakeFunc)(arg1, arg2)
         );
         return (isFunction(reducer)
           ? reducer
@@ -318,7 +307,7 @@ const processReducer = ({
       [`${nameReduced}/pending`]: (arg1, arg2) => {
         (defaultCases.pending ?? defaultCases.p ?? fakeFunc)(arg1, arg2);
         Object.values(MODULES).forEach((module) =>
-          (module?.cases?.pending ?? module?.cases?.p ?? fakeFunc)(arg1, arg2)
+          (module?.slice?.cases?.pending ?? module?.slice?.cases?.p ?? fakeFunc)(arg1, arg2)
         );
         return (isFunction(reducer)
           ? reducer
@@ -328,7 +317,7 @@ const processReducer = ({
         // console.log(defaultCases, defaultCases.reject);
         (defaultCases.rejected ?? defaultCases.r ?? fakeFunc)(arg1, arg2);
         Object.values(MODULES).forEach((module) =>
-          (module?.cases?.rejected ?? module?.cases?.r ?? fakeFunc)(arg1, arg2)
+          (module?.slice?.cases?.rejected ?? module?.slice?.cases?.r ?? fakeFunc)(arg1, arg2)
         );
 
         return (isFunction(reducer)
@@ -587,7 +576,7 @@ function getSlicesFromExtraReducers({
   delete extraReducers.getters;
 
   const modulesInitialState = mergeDeep(
-    ...Object.values(MODULES).map((module) => module?.state ?? {}),
+    ...Object.values(MODULES).map((module) => module?.slice?.state ?? {}),
     defaultInitialState,
     initialState,
     reducerInitialState
@@ -667,11 +656,11 @@ export const crud = {
     ) => {
       state.data[id] = data;
     },
-    updateById: (state, { payload: { id, data }}) => {
-        state.data[id] = {...state.data[id], ...data}
+    updateById: (state, { payload: { id, data } }) => {
+      state.data[id] = { ...state.data[id], ...data };
     },
-    deleteById: (state, { payload: { id}}) => {
-        delete state.data[id];
+    deleteById: (state, { payload: { id } }) => {
+      delete state.data[id];
     },
   },
 };
@@ -682,38 +671,41 @@ export const prf = {
       blacklist: ["status", "error"],
     },
   },
-  state: {
-    status: "idle",
-    error: null,
-  },
-  cases: {
-    pending: (state) => {
-      // pending or p
-      state.status = "loading";
-      state.error = null;
+  slice: {
+    state: {
+      status: "idle",
+      error: null,
     },
-    rejected: (state, action) => {
-      // reject or r
-      // console.log('here');
-      state.status = "failed";
-      state.error = action.error.message;
+    cases: {
+      pending: (state) => {
+        // pending or p
+        state.status = "loading";
+        state.error = null;
+      },
+      rejected: (state, action) => {
+        // reject or r
+        // console.log('here');
+        state.status = "failed";
+        state.error = action.error.message;
+      },
+      fulfilled: (state) => {
+        //fulfilled or f
+        state.status = "succeeded";
+      },
     },
-    fulfilled: (state) => {
-      //fulfilled or f
-      state.status = "succeeded";
+    getters: {
+      getStatus: ({ state }) => state?.status,
+      getError: ({ state }) => state?.error,
+    },
+    selectors: {
+      getError: ({ getters }) =>
+        (getters?.getStatus() === "failed" && getters?.getError()) || "",
+      isStatusFinish: ({ getters }) =>
+        ["failed", "succeeded"].includes(getters.getStatus()),
+      isPending: ({ getters, selectors }) => !selectors.isStatusFinish(),
     },
   },
-  getters: {
-    getStatus: ({ state }) => state?.status,
-    getError: ({ state }) => state?.error,
-  },
-  selectors: {
-    getError: ({ getters }) =>
-      (getters?.getStatus() === "failed" && getters?.getError()) || "",
-    isStatusFinish: ({ getters }) =>
-      ["failed", "succeeded"].includes(getters.getStatus()),
-    isPending: ({ getters, selectors }) => !selectors.isStatusFinish(),
-  },
+  reducers: {},
 }; // pending, reject, fulfilled
 
 export const INITIAL_STATE = {};
@@ -779,10 +771,6 @@ function getSlices({
 }
 
 function flatArrayOfObject(arrayOfObject, ...objects) {
-  // console.log(arrayOfObject);
-  // console.log(others);
-  // const ef = objects.map((obj) => !Array.isArray(obj) && [obj]);
-  // console.log(objects.flat());
   const r = Object.assign(
     {},
     Array.isArray(arrayOfObject) ? arrayOfObject.flat() : arrayOfObject,
@@ -813,48 +801,28 @@ function combineReducersFromSlicesReducers({
   persistConfig,
 }) {
   const gg1 = flatArrayOfObject({}, slices);
-  const gg = flatArrayOfObject(slices, reducers);
-  // console.log(gg1, gg);
+
+  const reducersModules = mergeDeep(
+      ...Object.values(MODULES).map((module) => module?.reducers ?? {}),
+      reducers
+    );
+
+  const gg = flatArrayOfObject(gg1, reducersModules);
   if (persistConfig) {
     const persistConfigModules = mergeDeep(
       ...Object.values(MODULES).map((module) => module?.config?.persist ?? {}),
       persistConfig
     );
-    // .reduce((a, b) => ({...a, ...b}), {}); // TODO: revoir ça
-
-    // console.log(
-    //     flatArrayOfObject(
-    //         {},
-    //         Object.entries(gg).map(([gg_name, g]) => ({
-    //             [gg_name]: persistReducer(
-    //                 createPersistConfig({
-    //                     key: gg_name,
-    //                     ...persistConfig,
-    //                     ...persistConfigModules,
-    //                 }),
-    //                 g,
-    //             ),
-    //         })),
-    //     ),
-    // );
 
     return combineReducersRedux(
       flatArrayOfObject(
         flatArrayOfObject(
           {},
           Object.entries(gg1).map(([gg_name, g]) => {
-            // console.log(
-            //     createPersistConfig({
-            //         key: gg_name,
-            //         ...persistConfig,
-            //         ...persistConfigModules,
-            //     }),
-            // );
             return {
               [gg_name]: persistReducer(
                 createPersistConfig({
                   key: gg_name,
-                  // ...persistConfig,
                   ...persistConfigModules,
                 }),
                 g
@@ -862,7 +830,7 @@ function combineReducersFromSlicesReducers({
             };
           })
         ),
-        reducers
+        reducersModules
       )
     );
   }
@@ -1076,7 +1044,7 @@ export const createGetters = (
   const sliceObj = getSlicesObj({ slice });
   const { getters = {} } = sliceObj;
   const modulesDefaultGetters = mergeDeep(
-    ...Object.values(MODULES).map((module) => module?.getters ?? {}),
+    ...Object.values(MODULES).map((module) => module?.slice?.getters ?? {}),
     defaultGetters,
     getters
   );
@@ -1086,44 +1054,6 @@ export const createGetters = (
     // ...defaultGetters,
     // ...getters,
   });
-  // const gettersAll = flatArrayOfObject(
-  //     {},
-  //     Object.entries({
-  //         ...modulesDefaultGetters,
-  //         // ...defaultGetters,
-  //         // ...getters,
-  //     }).map(([k, v]) => {
-  //         if (isFunction(v)) {
-  //             return {
-  //                 [k]: (...args) =>
-  //                     createObserver((state) =>
-  //                         v({
-  //                             state: state[name],
-  //                             getters: {
-  //                                 ...modulesDefaultGetters,
-  //                                 // ...defaultGetters,
-  //                                 // ...getters,
-  //                             },
-  //                             args: args?.[0] ?? {},
-  //                             context: {
-  //                                 state,
-  //                                 name,
-  //                             },
-  //                         })
-  //                     )(),
-  //             };
-  //         }
-  //         // if (isString(v)) {
-  //         //     return {
-  //         //         [k]: (...args) =>
-  //         //             createObserver(({state}) =>
-  //         //                 getByPath(state[name], v, undefined),
-  //         //             ),
-  //         //     };
-  //         // }
-  //     })
-  // );
-
   return gettersAll;
 };
 
@@ -1184,52 +1114,13 @@ export const createSelectors = ({
   const sliceObj = getSlicesObj({ slice });
   const { selectors = {} } = sliceObj;
   const modulesDefaultSelectors = mergeDeep(
-    ...Object.values(MODULES).map((module) => module?.selectors ?? {}),
+    ...Object.values(MODULES).map((module) => module?.slice?.selectors ?? {}),
     defaultSelectors,
     getters,
     selectors
   );
 
   const selectorsAll = selectorsObj.addSelectors(modulesDefaultSelectors);
-
-  // const selectorsAll = flatArrayOfObject(
-  //     {},
-  //     Object.entries({
-  //         ...modulesDefaultSelectors,
-  //         // ...defaultSelectors,
-  //         // ...selectors,
-  //         // ...getters,
-  //     }).map(([k, v]) => {
-  //         if (isFunction(v)) {
-  //             return {
-  //                 [k]: (...args) =>
-  //                     useSelector(
-  //                         createSelector((state) => {
-  //                             return v({
-  //                                 // TODO : add selector
-  //                                 state,
-  //                                 getters,
-  //                                 args: args?.[0] ?? {},
-  //                                 context: {
-  //                                     name,
-  //                                 },
-  //                             });
-  //                         })
-  //                     ),
-  //             };
-  //         }
-  //         // if (isString(v)) {
-  //         //     return {
-  //         //         [k]: (...args) =>
-  //         //             useSelectorRedux((state) =>
-  //         //                 createSelector((state) =>
-  //         //                     getByPath(state[name], v, undefined),
-  //         //                 ),
-  //         //             ),
-  //         //     };
-  //         // }
-  //     })
-  // );
 
   return selectorsAll;
 };
@@ -1321,14 +1212,14 @@ const createActions = ({ actions = {}, slice } = {}) => {
   });
 
   Object.entries(kkk2).forEach(([actionName_, action]) => {
-    newActions[actionName_] = createAction(action)
+    newActions[actionName_] = createAction(action);
   });
   const newActionsDispatch = {};
-  Object.entries(newActions).forEach(([k,v])=>{
+  Object.entries(newActions).forEach(([k, v]) => {
     newActionsDispatch[k] = async (...args) => {
-      return THE_STORE?.dispatch(v(...args)) ?? v(...args)
+      return THE_STORE?.dispatch(v(...args)) ?? v(...args);
     };
-  })
+  });
 
   // createAction(type)
   return newActionsDispatch;
@@ -1487,8 +1378,7 @@ const createStore = ({
         combineReducersOpts,
       });
 
-
-  THE_STORE = storeObj.store;  
+  THE_STORE = storeObj.store;
   return storeObj;
 };
 

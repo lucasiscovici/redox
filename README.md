@@ -409,71 +409,79 @@ createStorePersist({
             ...
         },
     },
-    state: {
-        ...
-    },
-    cases: {
-        pending: (state) => {
-            // pending or p
+    slice: {
+        state: {
             ...
         },
-        rejected: (state, action) => {
-            // reject or r
+        cases: {
+            pending: (state) => {
+                // pending or p
+                ...
+            },
+            rejected: (state, action) => {
+                // reject or r
+                ...
+            },
+            fulfilled: (state) => {
+                //fulfilled or f
+                ...
+            },
+        },
+        getters: {
             ...
         },
-        fulfilled: (state) => {
-            //fulfilled or f
+        selectors: {
             ...
         },
-    },
-    getters: {
-        ...
-    },
-    selectors: {
-        ...
-    },
+  },
+  reducers: {}
 }
 
 ```
 ## PRF
 ```js
  const prf = {
-    config: {
-        persist: {
-            blacklist: ['status', 'error'],
-        },
+  config: {
+    persist: {
+      blacklist: ["status", "error"],
     },
+  },
+  slice: {
     state: {
-        status: 'idle',
-        error: null,
+      status: "idle",
+      error: null,
     },
     cases: {
-        pending: (state) => {
-            // pending or p
-            state.status = 'loading';
-            state.error = null;
-        },
-        rejected: (state, action) => {
-            // reject or r
-            state.status = 'failed';
-            state.error = action.error.message;
-        },
-        fulfilled: (state) => {
-            //fulfilled or f
-            state.status = 'succeeded';
-        },
+      pending: (state) => {
+        // pending or p
+        state.status = "loading";
+        state.error = null;
+      },
+      rejected: (state, action) => {
+        // reject or r
+        // console.log('here');
+        state.status = "failed";
+        state.error = action.error.message;
+      },
+      fulfilled: (state) => {
+        //fulfilled or f
+        state.status = "succeeded";
+      },
     },
     getters: {
-        getStatus: ({state}) => state?.status,
-        getError: ({state}) => state?.error,
+      getStatus: ({ state }) => state?.status,
+      getError: ({ state }) => state?.error,
     },
     selectors: {
-        getError: ({getters}) =>
-            (getters?.getStatus() === 'failed' && getters?.getError()) || '',
-        isStatusFinish: ({getters}) =>
-            ['rejected', 'succeeded'].includes(getters.getStatus()),
+      getError: ({ getters }) =>
+        (getters?.getStatus() === "failed" && getters?.getError()) || "",
+      isStatusFinish: ({ getters }) =>
+        ["failed", "succeeded"].includes(getters.getStatus()),
+      isPending: ({ getters, selectors }) => !selectors.isStatusFinish(),
     },
-};
+  },
+  reducers: {},
+}; 
 ```
 
 ## configure

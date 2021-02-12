@@ -784,12 +784,13 @@ const createPersistConfig = ({
   whitelist = [],
   blacklist = [],
   stateReconciler = autoMergeLevel2,
+  white = false,
   ...persistConfigOpts
 }) => {
   return {
     key,
     storage,
-    whitelist: whitelist.length === 0 ? undefined : whitelist,
+    whitelist: white ? (whitelist.length === 0 ? undefined : whitelist) : undefined,
     blacklist: blacklist.length === 0 ? undefined : blacklist,
     stateReconciler,
     ...persistConfigOpts,
@@ -809,6 +810,8 @@ function combineReducersFromSlicesReducers({
 
   const gg = flatArrayOfObject(gg1, reducersModules);
   if (persistConfig) {
+    const white = persistConfig?.whitelist === undefined;
+
     const persistConfigModules = mergeDeep(
       ...Object.values(MODULES).map((module) => module?.config?.persist ?? {}),
       persistConfig
@@ -823,6 +826,7 @@ function combineReducersFromSlicesReducers({
               [gg_name]: persistReducer(
                 createPersistConfig({
                   key: gg_name,
+                  white,
                   ...persistConfigModules,
                 }),
                 g

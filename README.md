@@ -435,7 +435,8 @@ createStorePersist({
             ...
         },
   },
-  reducers: {}
+  reducers: {},
+  postCreateStore: () => {}
 }
 
 ```

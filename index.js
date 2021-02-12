@@ -706,6 +706,7 @@ export const prf = {
     },
   },
   reducers: {},
+  postCreateStore: () => {}
 }; // pending, reject, fulfilled
 
 export const INITIAL_STATE = {};
@@ -1383,6 +1384,9 @@ const createStore = ({
       });
 
   THE_STORE = storeObj.store;
+  Object.values(MODULES).forEach((module) => {
+    module?.postCreateStore?.(THE_STORE);
+  })
   return storeObj;
 };
 
